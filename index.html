@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ظلّ أخي: البقاء في الجحيم</title>
+<style>
+  :root {
+    --bg: #0a0a0a; --panel: #141414; --text: #e5e5e5; 
+    --primary: #3b82f6; --danger: #ef4444; --success: #10b981;
+    --warning: #f59e0b; --purple: #8b5cf6; --border: #262626;
+    --blood: #991b1b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
+  body { background: var(--bg); color: var(--text); display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+  
+  #game { width: 100%; max-width: 900px; height: 100vh; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  
+  /* Header */
+  header { background: #000; padding: 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; }
+  .header-badges span { background: #1a1a1a; padding: 4px 8px; border-radius: 4px; margin-left: 5px; border: 1px solid var(--border); }
+  
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 10px; background: #000; border-bottom: 1px solid var(--border); font-size: 10px; text-align: center;}
+  .stat-item { display: flex; flex-direction: column; gap: 3px; }
+  .bar-bg { background: #262626; height: 6px; border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; transition: 0.3s; }
+  
+  /* Tabs */
+  .tabs { display: flex; background: #0a0a0a; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tab { flex: 1; min-width: 70px; text-align: center; padding: 10px 5px; cursor: pointer; font-size: 12px; font-weight: bold; color: #737373; border-bottom: 3px solid transparent; transition: 0.2s;}
+  .tab.active { color: var(--danger); border-bottom-color: var(--danger); background: var(--panel); }
+  
+  /* Content */
+  #content { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+  
+  /* Action Cards */
+  .card { background: #0a0a0a; border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+  .card:hover { border-color: var(--danger); }
+  .card-info h4 { font-size: 14px; margin-bottom: 4px; color: #fca5a5; }
+  .card-info p { font-size: 11px; color: #a3a3a3; line-height: 1.4; }
+  .btn { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size:12px;}
+  .btn.danger { background: var(--blood); }
+  .btn.street { background: #4c1d95; border: 1px solid #7e22ce; }
+  .btn:disabled { background: #262626; color: #525252; cursor: not-allowed; }
+  
+  /* Log */
+  #log { background: #000; border-top: 1px solid var(--border); padding: 10px; height: 140px; overflow-y: auto; font-size: 12px; display: flex; flex-direction: column; gap: 5px;}
+  .log-msg { padding: 6px 10px; border-radius: 4px; background: #141414; border-right: 3px solid var(--primary); }
+  .log-msg.danger { border-color: var(--danger); background: #450a0a; color: #fca5a5; }
+  .log-msg.success { border-color: var(--success); background: #022c22; color: #6ee7b7; }
+  .log-msg.hell { border-color: var(--purple); background: #2e1065; color: #d8b4fe; font-weight:bold; }
+
+  /* Modal */
+  .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:100; padding:20px; }
+  .modal-content { background:#0a0a0a; padding:25px; border-radius:12px; border:1px solid var(--danger); max-width:400px; width:100%; text-align:center; box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
+  .modal h2 { color: var(--danger); margin-bottom: 15px; font-size: 20px;}
+  .modal p { margin-bottom: 20px; line-height: 1.6; font-size: 14px; color: #d4d4d4;}
+  .modal-btn { display:block; width:100%; padding:10px; margin-bottom:8px; background:#1f2937; border:1px solid #374151; border-radius:6px; color:white; font-weight:bold; cursor:pointer; transition:0.2s;}
+  .modal-btn:hover { background:#374151; }
+  .modal-btn.danger { background: var(--blood); border-color:var(--danger); }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <header>
+    <div>📅 اليوم <span id="ui-day">1</span> | <span id="ui-time">صباحاً</span></div>
+    <div class="header-badges">
+      <span>💵 <span id="ui-money">50</span> د</span>
+      <span>🍲 <span id="ui-food">2</span></span>
+      <span>🏠 إيجار: <span id="ui-rent" style="color:#fca5a5">7</span> أيام</span>
+    </div>
+  </header>
+
+  <div class="stats-grid">
+    <div class="stat-item">
+      <span>طاقتك ⚡</span>
+      <div class="bar-bg"><div class="bar-fill" id="bar-energy" style="background:var(--warning); width:100%"></div></div>
+    </div>
+    <div class="stat-item">
+      <span>صحتك 🩸</span>
+      <div class="bar-bg"><div class="bar-fill" id="bar-health" style="background:var(--danger); width:100%"></div></div>
+    </div>
+    <div class="stat-item">
+      <span>توترك 🧠</span>
+      <div class="bar-bg"><div class="bar-fill" id="bar-stress" style="background:var(--purple); width:0%"></div></div>
+    </div>
+    <div class="stat-item">
+      <span>سامي 👦</span>
+      <div class="bar-bg"><div class="bar-fill" id="bar-sami" style="background:var(--success); width:60%"></div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('home')">🏠 البيت</div>
+    <div class="tab" onclick="switchTab('work')">💼 العمل</div>
+    <div class="tab" onclick="switchTab('school')">🏫 المدرسة</div>
+    <div class="tab" onclick="switchTab('street')">😈 الشارع</div>
+    <div class="tab" onclick="switchTab('shop')">🛒 المتجر</div>
+    <div class="tab" onclick="switchTab('people')">👥 العلاقات</div>
+  </div>
+
+  <div id="content"></div>
+  <div id="log"><div class="log-msg">البداية: أنت يوسف، 16 عاماً. أخوك سامي 9 سنوات. والديكما ماتا. الجمعية تراقبكما. لا تفشل.</div></div>
+</div>
+
+<div class="modal" id="eventModal">
+  <div class="modal-content">
+    <h2 id="modal-title"></h2>
+    <p id="modal-text"></p>
+    <div id="modal-buttons"></div>
+  </div>
+</div>
+
+<script>
+// ================= GAME STATE =================
+let state = {
+  day: 1, timeIndex: 0, times: ["صباحاً", "ظهراً", "مساءً", "ليلاً"],
+  money: 40, food: 2, rentDue: 7,
+  energy: 100, health: 100, stress: 10,
+  samiHappy: 60, samiHealth: 100, houseClean: 50, study: 30,
+  jobCafe: 0, jobDelivery: 0, jobPort: 0,
+  repNeighbor: 20, repLandlord: 30, repZiad: 0,
+  flags: { cpsWarned: false, samiSick: false, gangMember: false, injured: false, gameOver: false },
+  activeTab: 'home'
+};
+
+// ================= CORE ENGINE =================
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderContent();
+}
+
+function log(msg, type = '') {
+  const logDiv = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = `log-msg ${type}`;
+  div.innerHTML = msg;
+  logDiv.appendChild(div);
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function updateUI() {
+  document.getElementById('ui-day').innerText = state.day;
+  document.getElementById('ui-time').innerText = state.times[state.timeIndex];
+  document.getElementById('ui-money').innerText = state.money;
+  document.getElementById('ui-food').innerText = state.food;
+  document.getElementById('ui-rent').innerText = state.rentDue;
+  
+  document.getElementById('bar-energy').style.width = `${state.energy}%`;
+  document.getElementById('bar-health').style.width = `${state.health}%`;
+  document.getElementById('bar-stress').style.width = `${state.stress}%`;
+  document.getElementById('bar-sami').style.width = `${state.samiHappy}%`;
+
+  renderContent();
+  saveGame();
+  checkDeath();
+}
+
+// ================= ACTIONS LOGIC =================
+function doAction(type) {
+  if(state.flags.gameOver) return;
+
+  // Check Costs
+  const checkCost = (energy, health, stress, time) => {
+    if(energy && state.energy < energy) return "طاقتك لا تكفي!";
+    if(health && state.health < health) return "صحتك لا تسمح بذلك!";
+    if(stress && state.stress >= 100) return "توترك مرتفع جداً!";
+    if(state.timeIndex + (time || 1) > 3) return "لا يوجد وقت كافٍ اليوم!";
+    return null;
+  };
+
+  let err = null;
+  let msg = "";
+  let logType = "";
+
+  switch(type) {
+    // --- HOME ---
+    case 'cook':
+      if(state.food < 1) return log("لا يوجد طعام لطبخه!", "danger");
+      state.food--; state.samiHappy += 10; state.energy += 10; state.stress -= 5; state.houseClean += 5;
+      msg = "طبخت لسامي. أكل بشهية والبيت أصبح دافئاً."; logType = "success";
+      break;
+    case 'clean':
+      err = checkCost(15, 0, 0, 1); if(err) return log(err, "danger");
+      state.energy -= 15; state.stress += 5; state.houseClean += 25;
+      msg = "نظفت البيت جيداً. الجمعية لن تشك بشيء اليوم."; logType = "success";
+      break;
+    case 'play_sami':
+      err = checkCost(10, 0, 0, 1); if(err) return log(err, "danger");
+      state.energy -= 10; state.samiHappy += 15; state.stress -= 10;
+      msg = "لعبت مع سامي. ضحك وقال: 'أنت أفضل أخ في العالم'."; logType = "success";
+      break;
+    case 'sleep':
+      state.energy += 40; state.stress -= 15; state.health += 5;
+      msg = "نمت قليلاً. استعدت بعض القوة.";
+      break;
+
+    // --- WORK ---
+    case 'work_cafe':
+      err = checkCost(20, 0, 0, 1); if(err) return log(err, "danger");
+      state.energy -= 20; state.stress += 5; state.money += 15; state.jobCafe++;
+      msg = "عملت في المقهى. كسبت 15 دينار."; break;
+    case 'work_delivery':
+      err = checkCost(30, 0, 0, 1); if(err) return log(err, "danger");
+      state.energy -= 30; state.stress += 15; state.money += 25; state.jobDelivery++;
+      msg = "عملت في التوصيل. ركضت كثيراً وكسبت 25 دينار."; break;
+    case 'work_port':
+      err = checkCost(45, 20, 0, 1); if(err) return log(err, "danger");
+      state.energy -= 45; state.health -= 20; state.stress += 20; state.money += 60; state.jobPort++;
+      msg = "عملت في الميناء (تفريغ شحنات). كسبت 60 دينار لكن ظهرك يؤلمك."; logType = "warning"; break;
+
+    // --- SCHOOL ---
+    case 'study':
+      err = checkCost(20, 0, 0, 1); if(err) return log(err, "danger");
+      state.energy -= 20; state.stress += 10; state.study += 15;
+      msg = "درست بجد. تحسنت درجاتك."; break;
+    case 'skip_school':
+      state.stress += 20; state.study -= 10; state.repZiad += 15;
+      state.money += 5; // Ziad pays you to hang out
+      msg = "هربت من المدرسة مع زياد. علمك بعض الحيل السيئة وأعطاك 5 دنانير."; logType = "hell"; break;
+
+    // --- STREET (HELL MODE) ---
+    case 'street_fight':
+      err = checkCost(30, 30, 0, 2); if(err) return log(err, "danger");
+      state.energy -= 30; state.health -= 30; state.stress += 25;
+      let fightMoney = Math.floor(Math.random() * 40) + 40;
+      state.money += fightMoney;
+      if(Math.random() > 0.6) { state.flags.injured = true; log("تعرضت لكسر في ذراعك! أنت تنزف.", "danger"); }
+      msg = `دخلت قتال الشوارع. تلقيتم اللكمات لكنك ربحت ${fightMoney} دينار.`; logType = "hell"; break;
+    case 'drug_run':
+      err = checkCost(20, 0, 0, 2); if(err) return log(err, "danger");
+      state.energy -= 20; state.stress += 30; state.money += 80; state.repZiad += 20;
+      if(Math.random() > 0.7) {
+        state.money -= 50; state.stress += 20;
+        log("أوقفتك الشرطة! دفعت رشوة 50 دينار ليهربوك.", "danger");
+      } else {
+        log("أوصلت الطرد المشبوه. كسبت 80 دينار سوداء.", "hell");
+      }
+      break;
+
+    // --- SHOP ---
+    case 'buy_food':
+      if(state.money < 20) return log("لا تملك مالاً!", "danger");
+      state.money -= 20; state.food += 3; msg = "اشتريت طعاماً (3 وجبات)."; break;
+    case 'buy_med':
+      if(state.money < 30) return log("لا تملك مالاً!", "danger");
+      state.money -= 30;
+      if(state.flags.samiSick) { state.flags.samiSick = false; state.samiHealth = 100; msg = "أعطيت سامي الدواء وتعافى!"; logType="success"; }
+      else { msg = "اشتريت دواءً احتياطياً."; }
+      break;
+    case 'buy_med_yusuf':
+      if(state.money < 40) return log("لا تملك مالاً!", "danger");
+      state.money -= 40; state.health = 100; state.flags.injured = false;
+      msg = "ذهبت للطبيب وعالجت إصاباتك. صحتك اكتملت."; logType="success"; break;
+    case 'pay_rent':
+      if(state.money < 100) return log("مالك لا يكفي لدفع الإيجار (100 د).", "danger");
+      state.money -= 100; state.rentDue = 7; state.repLandlord += 10;
+      msg = "دفعت الإيجار لأبو خالد. ارتحت نفسياً."; logType="success"; break;
+  }
+
+  log(msg, logType);
+  clampStats();
+  advanceTime();
+}
+
+// ================= TIME & EVENTS =================
+function advanceTime() {
+  state.timeIndex++;
+  if(state.timeIndex > 3) {
+    state.timeIndex = 0;
+    state.day++;
+    state.rentDue--;
+    endDay();
+  }
+  updateUI();
+}
+
+function endDay() {
+  // Eat
+  if(state.food > 0) { state.food--; state.energy += 20; }
+  else { 
+    state.samiHappy -= 25; state.samiHealth -= 20; state.energy -= 20;
+    log("نمتما جائعين. بطن سامي تصدر أصواتاً.", "danger");
+  }
+
+  // Sami Sickness
+  if(state.flags.samiSick) { state.samiHealth -= 30; state.samiHappy -= 15; log("مرض سامي يزداد سوءاً!", "danger"); }
+  else if(Math.random() > 0.8) { state.flags.samiSick = true; log("استيقظ سامي وهو يحمى بشدة.", "danger"); }
+
+  // Injured
+  if(state.flags.injured) { state.health -= 15; log("إصابتك تنزف وتتقيح.", "danger"); }
+
+  // House Clean
+  state.houseClean -= 10;
+
+  // Rent Check
+  if(state.rentDue <= 0) {
+    if(state.money >= 100) {
+      showModal("إيجار!", "أبو خالد يطالب بالإيجار (100 د). ماذا ستفعل؟", [
+        { text: "ادفع 100 دينار", action: () => { state.money -= 100; state.rentDue = 7; state.repLandlord += 10; log("دفعت الإيجار.", "success"); } },
+        { text: "مراوغة", action: () => { state.rentDue = 2; state.repLandlord -= 40; state.stress += 30; log("غضب أبو خالد وأعطاك يومين فقط.", "danger"); } }
+      ]);
+    } else {
+      state.stress += 40; state.repLandlord -= 50;
+      log("أبو خالد يطاردك لأنه لا يوجد مال للإيجار!", "danger");
+    }
+  }
+
+  // CPS Random Visit (Hell Event)
+  if(state.day === 5 || state.day === 12 || Math.random() > 0.85) {
+    showModal("زيارة الجمعية!", "أخصائية اجتماعية تطرق الباب فجأة لتقييم حالة سامي والبيت.", [
+      { text: "اسمح لها بالدخول", action: cpsCheck },
+      { text: "أخبر سامي بالاختباء (خطير)", action: () => {
+          if(Math.random() > 0.5) { log("اختبأ سامي بنجاح. لكن الأخصائية شكت.", "warning"); state.stress += 20; }
+          else { gameOver("سجن", "اكتشفت الأخصائية سامي مختبئاً. تم سحبه واعتقالك."); }
+      }}
+    ]);
+  }
+
+  checkDeath();
+}
+
+function cpsCheck() {
+  if(state.houseClean < 30 && state.samiHappy < 30) {
+    gameOver("سحب سامي", "البيت قذر، وسامي يبكي من الجوع. قررت الجمعية سحبه فوراً. سجنوك بتهمة الإهمال.");
+  } else if(state.samiHappy < 40 || state.flags.samiSick) {
+    log("الجمعية أعطتك إنذاراً أخيراً. سامي يبدو سيئاً.", "danger");
+    state.flags.cpsWarned = true;
+    state.stress += 40;
+  } else {
+    log("أعجبت الأخصائية بنظافة البيت وسعادة سامي. غادرت بسلام.", "success");
+    state.stress -= 10;
+  }
+  updateUI();
+}
+
+// ================= GAME OVER =================
+function checkDeath() {
+  if(state.flags.gameOver) return;
+  if(state.health <= 0) return gameOver("الموت في الشارع", "نزفت حتى الموت. سامي وحيد الآن.");
+  if(state.energy <= 0) return gameOver("الانهيار", "سقطت من الإرهاق. لم تعد قادراً على رعاية سامي.");
+  if(state.stress >= 100) return gameOver("الانتحار", "الضغط قتلك. لم تعد تطيق الحياة، وتركت سامي.");
+  if(state.samiHealth <= 0) return gameOver("وفاة سامي", "لم تعالجه بسرعة. مات سامي بين يديك. أنت السبب.");
+  if(state.rentDue <= -2) return gameOver("التشرد", "طردكم المالك. أنتما في الشارع، وسامي مريض.");
+  
+  if(state.day > 30) {
+    if(state.study > 80 && state.money > 300) gameOver("الأسطورة", "عملت بجد، تفوقت، وحصلت على منحة. سامي أصبح رجلاً. نجحت!");
+    else gameOver("النهاية الواقعية", "نجوتما، لكنك تعلم أن الأيام القادمة لن تكون أسهل.");
+  }
+}
+
+function gameOver(title, text) {
+  state.flags.gameOver = true;
+  showModal(title, text, [{ text: "العب من جديد", action: () => { localStorage.removeItem('zillHellSave'); location.reload(); } }]);
+}
+
+// ================= RENDER UI =================
+function renderContent() {
+  const div = document.getElementById('content');
+  div.innerHTML = '';
+
+  const card = (title, desc, btn, action, type="") => {
+    return `<div class="card"><div class="card-info"><h4>${title}</h4><p>${desc}</p></div><button class="btn ${type}" onclick="doAction('${action}')">${btn}</button></div>`;
+  };
+
+  if(state.activeTab === 'home') {
+    div.innerHTML = `<h3>البيت (نظافة البيت: ${state.houseClean}%)</h3>`;
+    div.innerHTML += card("تنظيف البيت", "ضروري لزيارات الجمعية المفاجئة. (طاقة -15)", "نظف", "clean");
+    div.innerHTML += card("طبخ وجبة", "يطعمكما ويحسن مزاج سامي. (-طعام)", "اطبخ", "cook");
+    div.innerHTML += card("اللعب مع سامي", "يرفع سعادته. (طاقة -10)", "العب", "play_sami");
+    div.innerHTML += card("نوم وراحة", "استعادة الطاقة (+40).", "نم", "sleep");
+    if(state.samiHappy < 30) div.innerHTML += `<p style="color:red; font-size:12px; margin-top:5px;">سامي حزين جداً، قد يسحبه المجتمع!</p>`;
+  }
+
+  else if(state.activeTab === 'work') {
+    div.innerHTML = `<h3>العمل (الخبرة: مقهى ${state.jobCafe}, توصيل ${state.jobDelivery}, ميناء ${state.jobPort})</h3>`;
+    div.innerHTML += card("مقهى", "أجر: 15 | طاقة -20", "اعمل", "work_cafe");
+    div.innerHTML += card("توصيل", "أجر: 25 | طاقة -30", "اعمل", "work_delivery");
+    div.innerHTML += card("الميناء (خطر)", "أجر: 60 | طاقة -45 | صحة -20", "اعمل", "work_port", "danger");
+  }
+
+  else if(state.activeTab === 'school') {
+    div.innerHTML = `<h3>المدرسة (معدلك: ${state.study}%)</h3>`;
+    div.innerHTML += card("دراسة", "يرفع معدلك. (طاقة -20)", "ادرس", "study");
+    div.innerHTML += card("الهروب من المدرسة", "مع زياد. مال +5 | دراسة -10 | توتر +20", "اهرب", "skip_school", "danger");
+  }
+
+  else if(state.activeTab === 'street') {
+    div.innerHTML = `<h3 style="color:var(--blood)">الشارع (منطقة الخطر)</h3>`;
+    div.innerHTML += card("قتال الشوارع", "مال عشوائي (40-80) | صحة -30 | طاقة -30", "اقتتل", "street_fight", "street");
+    div.innerHTML += card("توصيل طرد مشبوه", "مال: 80 | توتر +30 | خطر القبض", "وصل", "drug_run", "street");
+  }
+
+  else if(state.activeTab === 'shop') {
+    div.innerHTML = `<h3>السوق</h3>`;
+    div.innerHTML += card("طعام (وجبتان)", "السعر: 20 دينار", "اشترِ", "buy_food");
+    div.innerHTML += card("دواء لسامي", "السعر: 30 دينار", "اشترِ", "buy_med");
+    div.innerHTML += card("علاج إصاباتك", "السعر: 40 دينار", "اشترِ", "buy_med_yusuf", "danger");
+    div.innerHTML += card("دفع الإيجار (100)", `متبقي: ${state.rentDue} أيام`, "ادفع", "pay_rent");
+  }
+
+  else if(state.activeTab === 'people') {
+    div.innerHTML = `<h3>العلاقات</h3>`;
+    div.innerHTML += `<div class="card"><div class="card-info"><h4>أبو خالد (المالك)</h4><p>العلاقة: ${state.repLandlord}%</p></div></div>`;
+    div.innerHTML += `<div class="card"><div class="card-info"><h4>زياد (رأس الأفعى)</h4><p>العلاقة: ${state.repZiad}% | هو من يدير أعمال الشارع.</p></div></div>`;
+    div.innerHTML += `<div class="card"><div class="card-info"><h4>الجمعية الاجتماعية</h4><p>${state.flags.cpsWarned ? "⚠️ أنت تحت المراقبة!" : "لا يشكون بك حالياً."}</p></div></div>`;
+  }
+}
+
+function showModal(title, text, buttons) {
+  document.getElementById('modal-title').innerText = title;
+  document.getElementById('modal-text').innerText = text;
+  const btnCont = document.getElementById('modal-buttons');
+  btnCont.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = `modal-btn ${b.text.includes('اختب') || b.text.includes('مراوغة') ? 'danger' : ''}`;
+    btn.innerText = b.text;
+    btn.onclick = () => {
+      document.getElementById('eventModal').style.display = 'none';
+      b.action();
+      updateUI();
+    };
+    btnCont.appendChild(btn);
+  });
+  document.getElementById('eventModal').style.display = 'flex';
+}
+
+function clampStats() {
+  state.energy = Math.max(0, Math.min(100, state.energy));
+  state.health = Math.max(0, Math.min(100, state.health));
+  state.stress = Math.max(0, Math.min(100, state.stress));
+  state.samiHappy = Math.max(0, Math.min(100, state.samiHappy));
+  state.samiHealth = Math.max(0, Math.min(100, state.samiHealth));
+  state.houseClean = Math.max(0, Math.min(100, state.houseClean));
+  state.study = Math.max(0, Math.min(100, state.study));
+}
+
+function saveGame() { localStorage.setItem('zillHellSave', JSON.stringify(state)); }
+function loadGame() {
+  const s = localStorage.getItem('zillHellSave');
+  if(s) state = JSON.parse(s);
+}
+
+loadGame();
+updateUI();
+</script>
+</body>
+</html>
