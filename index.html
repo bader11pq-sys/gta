@@ -230,3 +230,390 @@ startGame();
 </script>
 </body>
 </html>
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ظلّ أخي - محاكاة البقاء</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; 
+    --primary: #3b82f6; --danger: #ef4444; --success: #10b981;
+    --warning: #f59e0b; --border: #334155;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg); color: var(--text);
+    margin: 0; padding: 10px; display: flex; justify-content: center;
+  }
+  .game-container {
+    width: 100%; max-width: 800px; background: var(--panel);
+    border-radius: 15px; border: 1px solid var(--border);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden;
+    display: flex; flex-direction: column; height: 95vh;
+  }
+  header {
+    background: #0f172a; padding: 15px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .header-info { font-size: 14px; font-weight: bold; }
+  .header-info span { color: var(--warning); }
+  
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px; padding: 10px; background: #0f172a;
+    border-bottom: 1px solid var(--border); font-size: 12px;
+  }
+  .stat-box { background: var(--panel); padding: 8px; border-radius: 8px; border: 1px solid var(--border);}
+  .stat-title { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .bar-bg { background: #334155; height: 6px; border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; transition: 0.3s; }
+  
+  #story-log {
+    flex-grow: 1; padding: 15px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .log-entry { padding: 10px; border-radius: 8px; background: #0f172a; border-right: 4px solid var(--primary); font-size: 14px; line-height: 1.6;}
+  .log-entry.event { border-color: var(--warning); background: #2a1e05; }
+  .log-entry.danger { border-color: var(--danger); background: #2a0505; }
+  .log-entry.success { border-color: var(--success); background: #052a1b; }
+  
+  .actions-area {
+    padding: 15px; background: #0f172a; border-top: 1px solid var(--border);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  button {
+    padding: 12px; border: none; border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-weight: bold; font-size: 14px; transition: 0.2s;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  button:hover { opacity: 0.8; transform: scale(0.98); }
+  .btn-main { background: var(--primary); color: white; }
+  .btn-action { background: #334155; color: var(--text); border: 1px solid #475569; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-disabled { background: #1e293b; color: #64748b; cursor: not-allowed; border: 1px solid var(--border);}
+  
+  .modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px;
+  }
+  .modal-content {
+    background: var(--panel); padding: 25px; border-radius: 15px; text-align: center;
+    border: 1px solid var(--border); max-width: 400px; width: 100%;
+  }
+  .modal h2 { margin-top: 0; color: var(--warning); }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <header>
+    <div class="header-info">اليوم <span id="ui-day">1</span> | <span id="ui-time">صباحاً</span></div>
+    <div class="header-info">المال: <span id="ui-money">50</span> د | الطعام: <span id="ui-food">3</span> وجبات</div>
+    <div class="header-info">الإيجار: <span id="ui-rent" style="color:red">مستحق خلال 7 أيام</span></div>
+  </header>
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-title"><span>طاقة يوسف</span> <b id="ui-energy">100%</b></div>
+      <div class="bar-bg"><div class="bar-fill" id="bar-energy" style="background:var(--success); width:100%"></div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-title"><span>توتر يوسف</span> <b id="ui-stress">0%</b></div>
+      <div class="bar-bg"><div class="bar-fill" id="bar-stress" style="background:var(--danger); width:0%"></div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-title"><span>سعادة سامي</span> <b id="ui-happy">70%</b></div>
+      <div class="bar-bg"><div class="bar-fill" id="bar-happy" style="background:var(--warning); width:70%"></div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-title"><span>ثقة سامي بك</span> <b id="ui-trust">50%</b></div>
+      <div class="bar-bg"><div class="bar-fill" id="bar-trust" style="background:var(--primary); width:50%"></div></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-title"><span>دراسة يوسف</span> <b id="ui-study">40%</b></div>
+      <div class="bar-bg"><div class="bar-fill" id="bar-study" style="background:#a78bfa; width:40%"></div></div>
+    </div>
+  </div>
+
+  <div id="story-log">
+    <!-- Narrative logs appear here -->
+  </div>
+
+  <div class="actions-area" id="actions-container">
+    <!-- Buttons generated by JS -->
+  </div>
+</div>
+
+<div class="modal" id="end-modal">
+  <div class="modal-content">
+    <h2 id="end-title">النهاية</h2>
+    <p id="end-text"></p>
+    <button class="btn-main" onclick="resetGame()" style="width:100%; justify-content:center;">العب مرة أخرى</button>
+  </div>
+</div>
+
+<script>
+// --- Game State ---
+let state = {
+  day: 1,
+  timeIndex: 0, // 0: Morning, 1: Afternoon, 2: Evening, 3: Night
+  times: ["صباحاً", "ظهراً", "مساءً", "ليلاً"],
+  money: 50,
+  food: 3,
+  rentDue: 7,
+  energy: 100,
+  stress: 10,
+  happy: 70,
+  trust: 50,
+  study: 40,
+  gameOver: false
+};
+
+// Load game from local storage if exists
+function loadGame() {
+  const saved = localStorage.getItem('zillAkhiSave');
+  if (saved) {
+    state = JSON.parse(saved);
+    document.getElementById('story-log').innerHTML = '';
+    logMsg("تم استعادة اللعبة المحفوظة.", "success");
+  } else {
+    logMsg("أنت يوسف (16 عاماً)، وتعيش مع أخيك الصغير سامي (9 سنوات) بعد وفاة والديكما. لديك 50 ديناراً، وطعام يكفي 3 أيام. الإيجار (100 دينار) مستحق بعد 7 أيام. اعمل، اهتم بأخيك، وحاول النجاة.", "event");
+  }
+  updateUI();
+}
+
+function saveGame() {
+  localStorage.setItem('zillAkhiSave', JSON.stringify(state));
+}
+
+// --- Logging ---
+function logMsg(text, type = "") {
+  const log = document.getElementById('story-log');
+  const div = document.createElement('div');
+  div.className = `log-entry ${type}`;
+  div.innerHTML = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+// --- Update UI ---
+function updateUI() {
+  document.getElementById('ui-day').innerText = state.day;
+  document.getElementById('ui-time').innerText = state.times[state.timeIndex];
+  document.getElementById('ui-money').innerText = state.money;
+  document.getElementById('ui-food').innerText = state.food;
+  
+  let rentText = state.rentDue <= 0 ? "متأخر!" : `بعد ${state.rentDue} أيام`;
+  document.getElementById('ui-rent').innerText = rentText;
+  document.getElementById('ui-rent').style.color = state.rentDue <= 2 ? "var(--danger)" : "var(--warning)";
+
+  const setBar = (id, val, color) => {
+    document.getElementById(id).style.width = `${Math.max(0, Math.min(100, val))}%`;
+    document.getElementById(id.replace('bar-', 'ui-')).innerText = `${Math.round(val)}%`;
+  };
+
+  setBar('bar-energy', state.energy);
+  setBar('bar-stress', state.stress);
+  setBar('bar-happy', state.happy);
+  setBar('bar-trust', state.trust);
+  setBar('bar-study', state.study);
+
+  renderActions();
+  saveGame();
+  checkGameOver();
+}
+
+// --- Actions Logic ---
+function doAction(type) {
+  if (state.gameOver) return;
+  
+  let timeCost = 1;
+  let msg = "";
+  let logType = "";
+
+  switch(type) {
+    case 'work_cafe':
+      state.energy -= 25; state.stress += 10; state.money += 15;
+      msg = "عملت في المقهى لساعات طويلة. كسبت 15 دينار، لكنك تشعر بالإرهاق."; break;
+    case 'work_delivery':
+      state.energy -= 35; state.stress += 15; state.money += 25;
+      msg = "عملت في التوصيل. المال جيد (25 دينار) لكن الجهد كبير جداً."; break;
+    case 'study':
+      state.energy -= 15; state.stress += 5; state.study += 10;
+      msg = "جلست تدرس وتراجع دروسك. شعرت ببعض القلق لكن مستواك يتحسن."; break;
+    case 'play_sami':
+      state.energy -= 10; state.happy += 15; state.trust += 10; state.stress -= 10;
+      msg = "لعبت مع سامي وضحكتم كثيراً. يبدو أنه يشعر بالأمان أكثر معك."; logType = "success"; break;
+    case 'cook':
+      if (state.food > 0) {
+        state.food -= 1; state.happy += 10; state.energy -= 5; state.stress -= 5;
+        msg = "طبخت وجبة دافئة لكما. سامي أكل بشهية."; logType = "success";
+      } else {
+        msg = "لا يوجد طعام لطبخه!"; logType = "danger";
+      }
+      break;
+    case 'buy_food':
+      if (state.money >= 15) {
+        state.money -= 15; state.food += 3;
+        msg = "اشتريت طعاماً يكفي لثلاث وجبات."; logType = "success";
+      } else {
+        msg = "لا تملك مالاً كافياً!"; logType = "danger";
+      }
+      break;
+    case 'sleep':
+      state.energy += 40; state.stress -= 15;
+      if(state.stress < 0) state.stress = 0;
+      msg = "نمت لبعض الوقت واستعدت طاقتك.";
+      break;
+    case 'help_neighbor':
+      if (Math.random() > 0.5) {
+        state.money += 5; state.food += 1; state.trust += 5;
+        msg = "ساعدك الجار وأعطاك بعض الطعام و 5 دنانير."; logType = "success";
+      } else {
+        state.stress += 10;
+        msg = "رفض الجار مساعدتك اليوم. شعرت بالإحباط."; logType = "danger";
+      }
+      break;
+    case 'pay_rent':
+      if (state.money >= 100) {
+        state.money -= 100; state.rentDue = 7;
+        msg = "دفعت الإيجار! ارتحت نفسياً لبعض الوقت."; logType = "success";
+      } else {
+        msg = "مالك لا يكفي لدفع الإيجار (تحتاج 100 د)."; logType = "danger";
+        return; // Don't consume time
+      }
+      break;
+  }
+
+  // Apply limits
+  state.energy = Math.max(0, Math.min(100, state.energy));
+  state.stress = Math.max(0, Math.min(100, state.stress));
+  state.happy = Math.max(0, Math.min(100, state.happy));
+  state.trust = Math.max(0, Math.min(100, state.trust));
+  state.study = Math.max(0, Math.min(100, state.study));
+
+  logMsg(msg, logType);
+  
+  // Advance time
+  advanceTime();
+}
+
+function advanceTime() {
+  state.timeIndex++;
+  if (state.timeIndex > 3) {
+    state.timeIndex = 0;
+    state.day++;
+    state.rentDue--;
+    dailyUpkeep();
+  }
+  updateUI();
+}
+
+function dailyUpkeep() {
+  // Eat automatically if food exists
+  if (state.food > 0) {
+    state.food--;
+    state.energy += 20; // Rest from sleep
+  } else {
+    state.energy -= 30;
+    state.happy -= 20;
+    state.stress += 20;
+    logMsg("نمتما جائعين. سامي يستيقظ باكياً من الجوع.", "danger");
+  }
+
+  // Random Daily Event
+  const events = [
+    () => { state.money += 10; logMsg("وجدت 10 دنانير في سترتك القديمة!", "success"); },
+    () => { state.happy -= 10; state.trust -= 5; logMsg("تذكر سامي والديك وبكى بشدة الليلة الماضية.", "danger"); },
+    () => { state.stress += 15; logMsg("اتصل بك المدير يسأل عن درجاتك، زاد توترك.", ""); },
+    () => { state.energy -= 10; logMsg("أصيب سامي بالبرد قليلاً، سهرت بجانبه.", "danger"); },
+    () => { state.happy += 15; logMsg("جاءت جارتكم وأعطتكم طعاماً ساخناً وحلوى.", "success"); },
+    () => { 
+      if (state.rentDue <= 0 && state.money < 100) {
+        logMsg("المالك يطرق الباب بقوة يطالبك بالإيجار! توترك في أقصى درجاته.", "danger");
+        state.stress += 30;
+      }
+    }
+  ];
+  if (Math.random() > 0.4) {
+    const randomEvent = events[Math.floor(Math.random() * events.length)];
+    randomEvent();
+  }
+}
+
+// --- Render Buttons ---
+function renderActions() {
+  const container = document.getElementById('actions-container');
+  container.innerHTML = '';
+
+  if (state.gameOver) return;
+
+  const createBtn = (text, type, actionName, isDanger = false) => {
+    const btn = document.createElement('button');
+    btn.className = `btn-action ${isDanger ? 'btn-danger' : ''}`;
+    btn.innerHTML = `<span>${text}</span>`;
+    btn.onclick = () => doAction(actionName);
+    return btn;
+  };
+
+  // Group actions based on time of day (optional complexity, for now show all valid)
+  container.appendChild(createBtn("العمل في المقهى 💵 (+15)", "money", "work_cafe"));
+  container.appendChild(createBtn("توصيل الطلبات 🛵 (+25)", "money", "work_delivery"));
+  container.appendChild(createBtn("الدراسة 📚 (+درجات)", "study", "study"));
+  container.appendChild(createBtn("اللعب مع سامي ⚽ (+سعادة)", "happy", "play_sami"));
+  
+  if (state.food > 0) container.appendChild(createBtn("طبخ وجبة 🍲 (-طعام)", "food", "cook"));
+  container.appendChild(createBtn("شراء طعام 🛒 (-15 دينار)", "food", "buy_food"));
+  container.appendChild(createBtn("النوم والراحة 🛌 (+طاقة)", "sleep", "sleep"));
+  container.appendChild(createBtn("طلب مساعدة الجيران 🤝", "help", "help_neighbor"));
+  
+  if (state.rentDue <= 0) {
+    const btn = createBtn("دفع الإيجار 🏠 (-100)", "rent", "pay_rent", true);
+    btn.style.gridColumn = "1 / -1"; // Full width for rent
+    container.appendChild(btn);
+  }
+}
+
+// --- Game Over Logic ---
+function checkGameOver() {
+  if (state.gameOver) return;
+
+  if (state.energy <= 0) {
+    endGame("الانهيار الجسدي", "لم تعد قادراً على الوقوف. انهار جسدك من الإرهاق والجوع، ونُقل سامي إلى دار رعاية. النهاية الحزينة.");
+  } else if (state.stress >= 100) {
+    endGame("الانهيار النفسي", "لم تعد تحتمل الضغط. انكسرت نفسياً وابتعدت عن سامي. النهاية الحزينة.");
+  } else if (state.happy <= 0) {
+    endGame("سامي يهرب", "لم يستطع سامي تحمل الجوع والحزن. هرب من المنزل ولم تجده. النهاية الحزينة.");
+  } else if (state.rentDue <= -3) {
+    endGame("الطرد", "لم تدفع الإيجار لثلاثة أيام. أخرجكم المالك وضاعت العائلة. النهاية الحزينة.");
+  } else if (state.day > 21) {
+    if (state.trust >= 70 && state.study >= 60 && state.happy >= 60) {
+      endGame("النهاية المشرقة", "مررت بأصعب 3 أسابيع في حياتك، لكنك صمدت! تفوقت في دراستك، اعتنيت بسامي، وأصبحتما أقوى. مستقبلكما يبدو أفضل الآن. أنت بطل حقيقي.");
+    } else {
+      endGame("النهاية الواقعية", "نجوتما، لكنك تعلم أن الطريق لا يزال طويلاً. أنتما معاً، وهذا يكفي للبدء من جديد.");
+    }
+  }
+}
+
+function endGame(title, text) {
+  state.gameOver = true;
+  document.getElementById('end-title').innerText = title;
+  document.getElementById('end-text').innerText = text;
+  document.getElementById('end-modal').style.display = 'flex';
+  localStorage.removeItem('zillAkhiSave'); // Clear save on game over
+}
+
+function resetGame() {
+  localStorage.removeItem('zillAkhiSave');
+  location.reload();
+}
+
+// Initialize
+loadGame();
+</script>
+</body>
+</html>
